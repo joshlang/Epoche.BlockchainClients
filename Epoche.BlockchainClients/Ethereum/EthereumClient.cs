@@ -307,23 +307,8 @@ public class EthereumClient : IEthereumClient
         GetBlockContractEventsAsync(height, height, addresses, cancellationToken);
     public Task<EthereumLog[]> GetBlockContractEventsAsync(long minHeight, long maxHeight, string address, CancellationToken cancellationToken = default) =>
         GetBlockContractEventsAsync(minHeight, maxHeight, new[] { address }, cancellationToken);
-    public async Task<EthereumLog[]> GetBlockContractEventsAsync(long minHeight, long maxHeight, string[] addresses, CancellationToken cancellationToken = default)
-    {
-        var filterId = await RequestAsync<string>("eth_newFilter", new object[] { new { fromBlock = ToHex(minHeight), toBlock = ToHex(maxHeight), address = addresses, topics = Array.Empty<object>() } }, cancellationToken).ThrowOnError().ConfigureAwait(false);
-        var changes = await RequestAsync<EthereumLog[]>("eth_getFilterLogs", new object[] { filterId }, cancellationToken).ThrowOnError().ConfigureAwait(false);
-        UninstallFilterAsync(filterId, cancellationToken).SwallowExceptions();
-        return changes;
-    }
-    async Task UninstallFilterAsync(string filterId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            await RequestValueAsync<bool>("eth_uninstallFilter", new object[] { filterId }, cancellationToken).ThrowOnError().ConfigureAwait(false);
-        }
-        catch
-        {
-        }
-    }
+    public async Task<EthereumLog[]> GetBlockContractEventsAsync(long minHeight, long maxHeight, string[] addresses, CancellationToken cancellationToken = default) =>
+        await RequestAsync<EthereumLog[]>("eth_getLogs", new object[] { new { fromBlock = ToHex(minHeight), toBlock = ToHex(maxHeight), address = addresses, topics = Array.Empty<object>() } }, cancellationToken).ThrowOnError().ConfigureAwait(false);
 
     public async Task<string> RawCallAsync(string address, string data, CancellationToken cancellationToken = default) => await RequestAsync<string>("eth_call", new object[] { new { to = address, data }, "pending" }, cancellationToken).ThrowOnError().ConfigureAwait(false);
 
