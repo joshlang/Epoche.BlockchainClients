@@ -309,9 +309,9 @@ public class EthereumClient : IEthereumClient
         GetBlockContractEventsAsync(minHeight, maxHeight, new[] { address }, cancellationToken);
     public async Task<EthereumLog[]> GetBlockContractEventsAsync(long minHeight, long maxHeight, string[] addresses, CancellationToken cancellationToken = default)
     {
-        var filterId = await RequestAsync<string>("eth_newFilter", new object[] { new { fromBlock = ToHex(minHeight), toBlock = ToHex(maxHeight), addresses, topics = Array.Empty<object>() } }, cancellationToken).ThrowOnError().ConfigureAwait(false);
+        var filterId = await RequestAsync<string>("eth_newFilter", new object[] { new { fromBlock = ToHex(minHeight), toBlock = ToHex(maxHeight), address = addresses, topics = Array.Empty<object>() } }, cancellationToken).ThrowOnError().ConfigureAwait(false);
         var changes = await RequestAsync<EthereumLog[]>("eth_getFilterLogs", new object[] { filterId }, cancellationToken).ThrowOnError().ConfigureAwait(false);
-        _ = UninstallFilterAsync(filterId, cancellationToken);
+        UninstallFilterAsync(filterId, cancellationToken).SwallowExceptions();
         return changes;
     }
     async Task UninstallFilterAsync(string filterId, CancellationToken cancellationToken = default)
