@@ -211,6 +211,7 @@ public class EthereumClient : IEthereumClient
         var transactions = block
             .TransactionHashes
             .Zip(traceResults, (txHash, traceResult) => new TransactionInfo(
+                date: DateTimeOffset.FromUnixTimeSeconds(block.Timestamp).UtcDateTime,
                 hash: txHash,
                 inputReferences: null,
                 outputs: traceResult
@@ -311,6 +312,7 @@ public class EthereumClient : IEthereumClient
         await RequestAsync<EthereumLog[]>("eth_getLogs", new object[] { new { fromBlock = ToHex(minHeight), toBlock = ToHex(maxHeight), address = addresses, topics = Array.Empty<object>() } }, cancellationToken).ThrowOnError().ConfigureAwait(false);
 
     public async Task<string> RawCallAsync(string address, string data, CancellationToken cancellationToken = default) => await RequestAsync<string>("eth_call", new object[] { new { to = address, data }, "pending" }, cancellationToken).ThrowOnError().ConfigureAwait(false);
+    public async Task<string> RawCallAtBlockAsync(string address, string data, long blockNumber, CancellationToken cancellationToken = default) => await RequestAsync<string>("eth_call", new object[] { new { to = address, data }, "0x" + blockNumber.ToString("x") }, cancellationToken).ThrowOnError().ConfigureAwait(false);
 
     public async Task<EthereumTransactionReceipt?> GetTransactionReceiptAsync(string hash, CancellationToken cancellationToken = default) =>
         await RequestAsync<EthereumTransactionReceipt>("eth_getTransactionReceipt", new object[] { hash }, cancellationToken).ThrowOrNullOnError().ConfigureAwait(false);

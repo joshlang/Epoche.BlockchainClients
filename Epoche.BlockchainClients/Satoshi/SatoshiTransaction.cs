@@ -50,14 +50,15 @@ public class SatoshiTransaction
     public SatoshiTransactionOutput[] Outputs { get; set; } = default!;
 
     internal TransactionInfo ToTransactionInfo() => new(
+        date: DateTimeOffset.FromUnixTimeSeconds(BlockTime).UtcDateTime,
         hash: StandardHash,
         inputReferences: Inputs
             .Where(i => i.Coinbase is null)
             .Select(i => new TransactionInputReferenceInfo(hash: i.Hash, index: i.Index.ToString())),
         outputs: Outputs
-            .Where(o => o.Script?.Addresses.Length == 1)
+            .Where(o => o.Script?.Addresses.Length == 1 || !string.IsNullOrEmpty(o.Script?.Address))
             .Select(o => new TransactionOutputInfo(
-                address: o.Script.Addresses[0],
+                address: string.IsNullOrEmpty(o.Script.Address) ? o.Script.Addresses[0] : o.Script.Address,
                 value: o.Value,
                 index: o.Index.ToString())));
 }

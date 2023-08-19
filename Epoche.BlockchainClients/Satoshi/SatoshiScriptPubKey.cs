@@ -14,6 +14,9 @@ public class SatoshiScriptPubKey
     [JsonPropertyName("type")]
     public string Type { get; set; } = default!;
 
+    [JsonPropertyName("address")]
+    public string? Address { get; set; }
+
     [JsonPropertyName("addresses")]
     public string[] Addresses { get; set; } = Array.Empty<string>();
 }
