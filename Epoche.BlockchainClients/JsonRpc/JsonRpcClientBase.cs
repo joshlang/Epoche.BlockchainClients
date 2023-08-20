@@ -52,6 +52,9 @@ public abstract class JsonRpcClientBase
     {
         requestOptions ??= DefaultOptions;
         using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+        //using var ms = new MemoryStream();
+        //await response.CopyToAsync(ms);
+        //var str = UTF8Encoding.UTF8.GetString(ms.ToArray());
         var rawResult = await JsonSerializer.DeserializeAsync<RawJsonRpcResult<T>>(utf8Json: response, options: requestOptions?.SerializerOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
         return rawResult!.ToRpcResult();
     }

@@ -49,16 +49,18 @@ public class SatoshiTransaction
     [JsonPropertyName("vout")]
     public SatoshiTransactionOutput[] Outputs { get; set; } = default!;
 
-    internal TransactionInfo ToTransactionInfo() => new(
+    internal TransactionInfo ToTransactionInfo() => TransactionInfo.Create(
         date: DateTimeOffset.FromUnixTimeSeconds(BlockTime).UtcDateTime,
         hash: StandardHash,
         inputReferences: Inputs
             .Where(i => i.Coinbase is null)
-            .Select(i => new TransactionInputReferenceInfo(hash: i.Hash, index: i.Index.ToString())),
+            .Select(i => new TransactionInputReferenceInfo { Hash = i.Hash, Index = i.Index.ToString() }),
         outputs: Outputs
             .Where(o => o.Script?.Addresses.Length == 1 || !string.IsNullOrEmpty(o.Script?.Address))
-            .Select(o => new TransactionOutputInfo(
-                address: string.IsNullOrEmpty(o.Script.Address) ? o.Script.Addresses[0] : o.Script.Address,
-                value: o.Value,
-                index: o.Index.ToString())));
+            .Select(o => new TransactionOutputInfo
+            {
+                Address = string.IsNullOrEmpty(o.Script.Address) ? o.Script.Addresses[0] : o.Script.Address,
+                Value = o.Value >= 0 ? o.Value : throw new ArgumentOutOfRangeException(nameof(o.Value)),
+                Index = o.Index.ToString()
+            }));
 }

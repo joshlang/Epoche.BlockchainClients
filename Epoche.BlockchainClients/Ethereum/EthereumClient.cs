@@ -210,16 +210,18 @@ public class EthereumClient : IEthereumClient
 
         var transactions = block
             .TransactionHashes
-            .Zip(traceResults, (txHash, traceResult) => new TransactionInfo(
+            .Zip(traceResults, (txHash, traceResult) => TransactionInfo.Create(
                 date: DateTimeOffset.FromUnixTimeSeconds(block.Timestamp).UtcDateTime,
                 hash: txHash,
                 inputReferences: null,
                 outputs: traceResult
                     .OrderBy(x => x.Key)
-                    .Select((x, i) => new TransactionOutputInfo(
-                        address: x.Key,
-                        value: x.Value,
-                        index: i.ToString()))))
+                    .Select((x, i) => new TransactionOutputInfo
+                    {
+                        Address = x.Key,
+                        Value = x.Value,
+                        Index = i.ToString()
+                    })))
             .ToArray();
 
         return transactions;

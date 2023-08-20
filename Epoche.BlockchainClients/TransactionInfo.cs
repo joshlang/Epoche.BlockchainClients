@@ -2,21 +2,21 @@
 
 public class TransactionInfo
 {
-    public readonly string Hash;
-    public readonly DateTime Date;
+    public required string Hash { get; init; }
+    public required DateTime Date { get; init; }
 
-    public readonly TransactionInputReferenceInfo[] InputReferences;
-    public readonly TransactionOutputInfo[] Outputs;
+    public required TransactionInputReferenceInfo[] InputReferences { get; init; }
+    public required TransactionOutputInfo[] Outputs { get; init; }
 
-    public TransactionInfo(
+    internal static TransactionInfo Create(
         DateTime date,
         string hash,
         IEnumerable<TransactionInputReferenceInfo>? inputReferences,
-        IEnumerable<TransactionOutputInfo> outputs)
-    {
-        Date = date;
-        Hash = hash ?? throw new ArgumentNullException(nameof(hash));
-        InputReferences = inputReferences.EmptyIfNull().ToArray();
-        Outputs = outputs?.ToArray() ?? throw new ArgumentNullException(nameof(outputs));
-    }
+        IEnumerable<TransactionOutputInfo> outputs) => new TransactionInfo
+        {
+            Date = date,
+            Hash = hash ?? throw new ArgumentNullException(nameof(hash)),
+            InputReferences = inputReferences.EmptyIfNull().ToArray(),
+            Outputs = outputs?.ToArray() ?? throw new ArgumentNullException(nameof(outputs))
+        };
 }
