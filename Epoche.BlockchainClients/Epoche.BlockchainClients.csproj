@@ -14,7 +14,7 @@
 		<PackageId>Epoche.BlockchainClients</PackageId>
 		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
 		<PackageProjectUrl>https://github.com/joshlang/Epoche.BlockchainClients</PackageProjectUrl>
-		<Version>1.1.4</Version>
+		<Version>1.1.5</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -20,12 +20,27 @@ public class NearClient : INearClient
         return result!.Header.Height;
     }
 
-    public Task<NearBlockResult> GetBlockAsync(long height, CancellationToken cancellationToken = default) =>
-        RequestAsync<NearBlockResult>("block", new { block_id = height }, cancellationToken).ThrowOrNullOnError()!;
+    static NearBlockResult? ToResult(JsonRpcResult<NearBlockResult> result)
+    {
+        if (result.Ok) { return result.Result; }
+        if (result.Error?.Data?.RootElement.ToString().Contains("DB Not Found Error") != true) { result.ThrowOnError(); }
+        return null;
+    }
 
-    public Task<NearBlockResult> GetBlockAsync(string hash, CancellationToken cancellationToken = default) =>
-        RequestAsync<NearBlockResult>("block", new { block_id = hash }, cancellationToken).ThrowOrNullOnError()!;
+    public async Task<NearBlockResult?> GetBlockAsync(long height, CancellationToken cancellationToken = default) =>
+        ToResult(await RequestAsync<NearBlockResult>("block", new { block_id = height }, cancellationToken))!;
 
-    public Task<NearTransactionResult> GetTransactionAsync(string hash, CancellationToken cancellationToken = default) =>
-        RequestAsync<NearTransactionResult>("tx", new[] { hash, "sender.mainnet" }, cancellationToken).ThrowOrNullOnError()!;
+    public async Task<NearBlockResult?> GetBlockAsync(string hash, CancellationToken cancellationToken = default) =>
+        ToResult(await RequestAsync<NearBlockResult>("block", new { block_id = hash }, cancellationToken))!;
+
+    public async Task<NearTransactionResult?> GetTransactionAsync(string hash, CancellationToken cancellationToken = default)
+    {
+        var tx = await RequestAsync<NearTransactionResult>("tx", new[] { hash, "sender.mainnet" }, cancellationToken)!;
+        if (tx.Ok)
+        {
+            return tx.Result;
+        }
+        if (tx.Error?.Data?.RootElement.ToString().Contains(" doesn't exist") != true) { tx.ThrowOnError(); }
+        return null;
+    }
 }
