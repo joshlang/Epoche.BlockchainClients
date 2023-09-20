@@ -18,14 +18,20 @@ public class EthereumClient : IEthereumClient
     };
 
     readonly IJsonRpcClient Client;
+    readonly RateLimiter RateLimiter = new();
 
     public EthereumClient(IJsonRpcClient jsonRpcClient)
     {
         Client = jsonRpcClient ?? throw new ArgumentNullException(nameof(jsonRpcClient));
     }
 
-    Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class => Client.RequestAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
-    Task<JsonRpcResult<T>> RequestValueAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : struct => Client.RequestValueAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
+    public void SetMinRequestRate(TimeSpan minInterval) => RateLimiter.MinInterval = minInterval;
+
+    async Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class
+    {
+        await RateLimiter.WaitAsync(cancellationToken);
+        return await Client.RequestAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
+    }
 
     static long HexToLong(string s)
     {
