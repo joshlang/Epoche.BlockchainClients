@@ -12,7 +12,6 @@ public class NearClient : INearClient
     }
 
     Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class => Client.RequestAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
-    Task<JsonRpcResult<T>> RequestValueAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : struct => Client.RequestValueAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
 
     public async Task<long> GetBlockCountAsync(CancellationToken cancellationToken = default)
     {

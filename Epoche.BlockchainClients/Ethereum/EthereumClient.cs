@@ -25,7 +25,11 @@ public class EthereumClient : IEthereumClient
         Client = jsonRpcClient ?? throw new ArgumentNullException(nameof(jsonRpcClient));
     }
 
-    public void SetMinRequestRate(TimeSpan minInterval) => RateLimiter.MinInterval = minInterval;
+    public TimeSpan MinRequestRate
+    {
+        get => RateLimiter.MinInterval;
+        set => RateLimiter.MinInterval = value;
+    }
 
     async Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class
     {
