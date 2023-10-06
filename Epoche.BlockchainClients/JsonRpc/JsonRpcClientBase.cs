@@ -51,38 +51,53 @@ public abstract class JsonRpcClientBase
     public virtual async Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, JsonRpcRequestOptions? requestOptions, CancellationToken cancellationToken = default) where T : class
     {
         requestOptions ??= DefaultOptions;
-        using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
-        //using var ms = new MemoryStream();
-        //await response.CopyToAsync(ms);
-        //var str = UTF8Encoding.UTF8.GetString(ms.ToArray());
-        var rawResult = await JsonSerializer.DeserializeAsync<RawJsonRpcResult<T>>(utf8Json: response, options: requestOptions?.SerializerOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return rawResult!.ToRpcResult();
+        for (var retry = 0; ; ++retry)
+        {
+            using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            //using var ms = new MemoryStream();
+            //await response.CopyToAsync(ms);
+            //var str = UTF8Encoding.UTF8.GetString(ms.ToArray());
+            var rawResult = await JsonSerializer.DeserializeAsync<RawJsonRpcResult<T>>(utf8Json: response, options: requestOptions.SerializerOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var result = rawResult!.ToRpcResult();
+            if (retry < 5 && result.Error?.Code == -32055) { continue; }
+            return result;
+        }
     }
 
     public virtual async Task<JsonRpcResult<T>> RequestValueAsync<T>(string method, object? request, JsonRpcRequestOptions? requestOptions, CancellationToken cancellationToken = default) where T : struct
     {
         requestOptions ??= DefaultOptions;
-        using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var rawResult = await JsonSerializer.DeserializeAsync<RawJsonRpcResult<T?>>(utf8Json: response, options: requestOptions?.SerializerOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return
-            rawResult!.Error != null
-            ? new JsonRpcResult<T>(rawResult.Error)
-            : rawResult.Result.HasValue
-            ? new JsonRpcResult<T>(rawResult.Result.GetValueOrDefault())
-            : throw new JsonRpcException("A null result was received for a non-nullable request");
+        for (var retry = 0; ; ++retry)
+        {
+            using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var rawResult = await JsonSerializer.DeserializeAsync<RawJsonRpcResult<T?>>(utf8Json: response, options: requestOptions.SerializerOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var result =
+                rawResult!.Error != null
+                ? new JsonRpcResult<T>(rawResult.Error)
+                : rawResult.Result.HasValue
+                ? new JsonRpcResult<T>(rawResult.Result.GetValueOrDefault())
+                : throw new JsonRpcException("A null result was received for a non-nullable request");
+            if (retry < 5 && result.Error?.Code == -32055) { continue; }
+            return result;
+        }
     }
 
     public virtual async Task<JsonRpcResult<JsonElement>> RequestAsync(string method, object? request, JsonRpcRequestOptions? requestOptions, CancellationToken cancellationToken = default)
     {
         requestOptions ??= DefaultOptions;
-        using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var rawResult = await JsonDocument.ParseAsync(utf8Json: response, cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (rawResult.RootElement.TryGetProperty("error", out var e) && e.ValueKind != JsonValueKind.Null)
+        for (var retry = 0; ; ++retry)
         {
-            var rawText = e.GetRawText();
-            rawResult.Dispose();
-            return new JsonRpcResult<JsonElement>(JsonSerializer.Deserialize<JsonRpcError>(rawText) ?? throw new JsonRpcException("A null result was received for a non-nullable request"));
+            using var response = await GetResponseAsync(method: method, request: request, requestOptions: requestOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var rawResult = await JsonDocument.ParseAsync(utf8Json: response, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (rawResult.RootElement.TryGetProperty("error", out var e) && e.ValueKind != JsonValueKind.Null)
+            {
+                var rawText = e.GetRawText();
+                rawResult.Dispose();
+                return new JsonRpcResult<JsonElement>(JsonSerializer.Deserialize<JsonRpcError>(rawText) ?? throw new JsonRpcException("A null result was received for a non-nullable request"));
+            }
+            var result = new JsonRpcResult<JsonElement>(rawResult.RootElement.GetProperty("result"));
+            if (retry < 5 && result.Error?.Code == -32055) { continue; }
+            return result;
         }
-        return new JsonRpcResult<JsonElement>(rawResult.RootElement.GetProperty("result"));
     }
 }
