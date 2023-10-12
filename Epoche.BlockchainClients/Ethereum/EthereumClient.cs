@@ -249,21 +249,29 @@ public class EthereumClient : IEthereumClient
     public Task<string> GetCodeAsync(string address, CancellationToken cancellationToken = default) =>
         RequestAsync<string>("eth_getCode", new object[] { address, "latest" }, cancellationToken).ThrowOnError();
 
-    public async Task<decimal> GetBalanceAsync(string address, CancellationToken cancellationToken = default)
+    public async Task<BigFraction> GetBalanceAsync(string address, CancellationToken cancellationToken = default)
     {
         var balanceString = await RequestAsync<string>("eth_getBalance", new[] { address, "pending" }, cancellationToken: cancellationToken).ThrowOnError().ConfigureAwait(false);
         var balanceInt = EthereumHexBigIntegerConverter.FromString(balanceString);
-        var balance = (decimal)balanceInt / WeiPerEther;
+        var balance = ((BigFraction)balanceInt).DividePow10(18);
         return balance;
     }
 
-    public async Task<decimal[]> GetBalancesAsync(IEnumerable<string> addresses, CancellationToken cancellationToken = default)
+    public async Task<BigFraction[]> GetBalancesAsync(IEnumerable<string> addresses, CancellationToken cancellationToken = default)
     {
         var balanceStrings = await Client.BatchRequestAsync<string>("eth_getBalance", addresses.Select(x => new[] { x, "pending" }), Options, cancellationToken: cancellationToken).ThrowOnError().ConfigureAwait(false);
         return balanceStrings
             .Select(x => EthereumHexBigIntegerConverter.FromString(x.Result))
-            .Select(x => (decimal)x / WeiPerEther)
+            .Select(x => ((BigFraction)x).DividePow10(18))
             .ToArray();
+    }
+
+    public async Task<BigFraction> GetBalanceAtBlockAsync(string address, long blockNumber, CancellationToken cancellationToken = default)
+    {
+        var balanceString = await RequestAsync<string>("eth_getBalance", new[] { address, "0x" + blockNumber.ToString("x") }, cancellationToken: cancellationToken).ThrowOnError().ConfigureAwait(false);
+        var balanceInt = EthereumHexBigIntegerConverter.FromString(balanceString);
+        var balance = ((BigFraction)balanceInt).DividePow10(18);
+        return balance;
     }
 
     public async Task<EthereumRawTransaction> CreateRawTransactionAsync(string privateKey, string fromAddress, string toAddress, decimal value, BigInteger gasPriceE18, int gasProvided, int nonce, CancellationToken cancellationToken = default)
