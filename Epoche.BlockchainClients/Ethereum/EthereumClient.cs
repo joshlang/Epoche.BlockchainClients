@@ -31,7 +31,7 @@ public class EthereumClient : IEthereumClient
         set => RateLimiter.MinInterval = value;
     }
 
-    async Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class
+    protected virtual async Task<JsonRpcResult<T>> RequestAsync<T>(string method, object? request, CancellationToken cancellationToken = default) where T : class
     {
         await RateLimiter.WaitAsync(cancellationToken);
         return await Client.RequestAsync<T>(method: method, request: request, requestOptions: Options, cancellationToken: cancellationToken);
